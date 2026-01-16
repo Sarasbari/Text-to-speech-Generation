@@ -1,5 +1,7 @@
 # Text-to-Speech AI
 
+A clean Text-to-Speech web interface powered by Hugging Face Inference. Users type text in a fixed-width, auto-expanding container and generate audio with one click. The UI stays simple, responsive, and focused on fast input and smooth speech output.
+
 A modern Next.js application for converting text to speech using AI technology, featuring a beautiful UI built with shadcn/ui and Tailwind CSS.
 
 ## Features
