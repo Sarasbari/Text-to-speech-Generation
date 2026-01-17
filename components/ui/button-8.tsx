@@ -110,7 +110,13 @@ const options: ISourceOptions = {
   ],
 };
 
-export const GenerateSpeechButton = () => {
+interface GenerateSpeechButtonProps {
+  onClick?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+export const GenerateSpeechButton = ({ onClick, disabled = false, loading = false }: GenerateSpeechButtonProps) => {
   const [particleState, setParticlesReady] = useState<"loaded" | "ready">();
   const [isHovering, setIsHovering] = useState(false);
 
@@ -129,7 +135,12 @@ export const GenerateSpeechButton = () => {
 
   return (
     <button
-      className="group relative my-8 rounded-full bg-gradient-to-r from-blue-300/30 via-blue-500/30 via-40% to-purple-500/30 p-1 text-white transition-transform hover:scale-110 active:scale-105"
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={cn(
+        "group relative my-8 rounded-full bg-gradient-to-r from-blue-300/30 via-blue-500/30 via-40% to-purple-500/30 p-1 text-white transition-transform hover:scale-110 active:scale-105",
+        (disabled || loading) && "opacity-50 cursor-not-allowed"
+      )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -156,7 +167,7 @@ export const GenerateSpeechButton = () => {
           className="absolute left-3 top-3 size-1.5 animate-sparkle fill-white"
         />
 
-        <span className="font-semibold">Generate speech</span>
+        <span className="font-semibold">{loading ? "Generating..." : "Generate speech"}</span>
       </div>
       {!!particleState && (
         <Particles

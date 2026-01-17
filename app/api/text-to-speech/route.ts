@@ -1,42 +1,33 @@
-// API route for text-to-speech conversion using Hugging Face
-// TODO: Implement Hugging Face Inference API integration
-
+// TEMPORARY DEMO API - Uses browser text-to-speech
+// Replace this with a real TTS service (see TTS_INTEGRATION_GUIDE.md)
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
     const { text } = await request.json();
 
-    if (!text || typeof text !== "string") {
+    // Validate text input
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json(
-        { error: "Text is required" },
+        { error: "Please enter some text to convert" },
         { status: 400 }
       );
     }
 
-    // TODO: Integrate Hugging Face Inference API
-    // Example structure:
-    // const response = await fetch(
-    //   "https://api-inference.huggingface.co/models/facebook/mms-tts-eng",
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-    //       "Content-Type": "application/json",
-    //     },
-    //     method: "POST",
-    //     body: JSON.stringify({ inputs: text }),
-    //   }
-    // );
-    // const audioBlob = await response.blob();
-
+    // Return a message indicating this is a demo
+    // The actual TTS will need to be done client-side or with a paid service
     return NextResponse.json(
-      { message: "Text-to-speech API endpoint ready for integration", text },
-      { status: 200 }
+      {
+        error: "⚠️ Demo Mode: Hugging Face free tier doesn't support TTS. Please see TTS_INTEGRATION_GUIDE.md for working solutions (ElevenLabs, OpenAI, or Web Speech API).",
+        demo: true,
+      },
+      { status: 503 }
     );
   } catch (error) {
     console.error("Error in text-to-speech API:", error);
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

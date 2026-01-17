@@ -2,10 +2,16 @@
 
 import * as React from "react";
 import { GenerateSpeechButton } from "@/components/ui/button-8";
+import { generateSpeech, downloadAudio } from "@/lib/ttsService";
 
 const Hero1 = () => {
   const [text, setText] = React.useState("");
+  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
 
   // Auto-resize textarea up to 3 lines, then enable scrolling
   React.useEffect(() => {
@@ -14,11 +20,11 @@ const Hero1 = () => {
 
     // Reset height to calculate scrollHeight
     textarea.style.height = "auto";
-    
+
     // Calculate line height (approximately 1.5rem per line)
     const lineHeight = 24; // 1.5rem = 24px
     const maxHeight = lineHeight * 3; // 3 lines max
-    
+
     // Set height based on content, but cap at maxHeight
     if (textarea.scrollHeight <= maxHeight) {
       textarea.style.height = `${textarea.scrollHeight}px`;
@@ -28,6 +34,85 @@ const Hero1 = () => {
       textarea.style.overflowY = "auto";
     }
   }, [text]);
+
+  // Cleanup audio URL when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
+
+  // Handle generate speech
+  const handleGenerate = async () => {
+    // Validate text
+    if (!text || text.trim().length === 0) {
+      setError("Please enter some text to convert");
+      return;
+    }
+
+    // Reset states
+    setError(null);
+    setLoading(true);
+
+    // Clean up previous audio URL
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+    setAudioBlob(null);
+
+    try {
+      // Try server-side TTS first
+      const result = await generateSpeech(text);
+      setAudioUrl(result.audioUrl);
+      setAudioBlob(result.audioBlob);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate speech";
+      console.error("Server TTS error:", err);
+
+      // If server fails, try browser-based TTS
+      try {
+        console.log("Falling back to browser TTS...");
+        const { generateSpeechBrowser } = await import("@/lib/ttsService");
+
+        // Use browser TTS
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+
+          // Get available voices
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+            if (englishVoice) {
+              utterance.voice = englishVoice;
+            }
+          }
+
+          window.speechSynthesis.speak(utterance);
+          setError("🔊 Using browser text-to-speech (server TTS unavailable). See TTS_INTEGRATION_GUIDE.md for setup instructions.");
+        } else {
+          setError(errorMessage + "\n\nYour browser doesn't support text-to-speech. Please see TTS_INTEGRATION_GUIDE.md for setup instructions.");
+        }
+      } catch (browserErr) {
+        setError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle download audio
+  const handleDownload = () => {
+    if (audioBlob) {
+      const filename = `speech-${Date.now()}.wav`;
+      downloadAudio(audioBlob, filename);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0c0414] text-white flex flex-col relative overflow-x-hidden">
@@ -50,10 +135,10 @@ const Hero1 = () => {
       {/* Header */}
       <header className="flex justify-between items-center p-6 relative z-10">
         <div className="flex items-center gap-2">
-          
+
           <div className="font-bold text-md"></div>
         </div>
-        
+
       </header>
 
       {/* Main Content */}
@@ -93,8 +178,41 @@ const Hero1 = () => {
 
           {/* Generate Speech Button */}
           <div className="flex justify-center mt-6">
-            <GenerateSpeechButton />
+            <GenerateSpeechButton
+              onClick={handleGenerate}
+              disabled={loading || !text.trim()}
+              loading={loading}
+            />
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="max-w-2xl mx-auto mt-4">
+              <div className="bg-red-500/20 border border-red-500/50 rounded-full px-4 py-2 text-sm text-red-300">
+                {error}
+              </div>
+            </div>
+          )}
+
+          {/* Audio Player */}
+          {audioUrl && (
+            <div className="max-w-2xl mx-auto mt-6 space-y-4">
+              <div className="bg-[#1c1528] rounded-full p-4 flex items-center justify-center gap-4">
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  controls
+                  className="flex-1 max-w-md"
+                />
+                <button
+                  onClick={handleDownload}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-full px-6 py-2 text-sm font-semibold text-white transition-all"
+                >
+                  Download
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Suggestion pills */}
           {/* <div className="flex flex-wrap justify-center gap-2 mt-12 max-w-2xl mx-auto">
