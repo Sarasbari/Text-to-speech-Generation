@@ -94,9 +94,9 @@ const Hero1 = () => {
           }
 
           window.speechSynthesis.speak(utterance);
-          setError("🔊 Using browser text-to-speech (server TTS unavailable). See TTS_INTEGRATION_GUIDE.md for setup instructions.");
+          setError("🔊 Using browser text-to-speech (server TTS unavailable).");
         } else {
-          setError(errorMessage + "\n\nYour browser doesn't support text-to-speech. Please see TTS_INTEGRATION_GUIDE.md for setup instructions.");
+          setError(errorMessage + "\n\nYour browser doesn't support text-to-speech.");
         }
       } catch (browserErr) {
         setError(errorMessage);
